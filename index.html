@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Link Detox — Phishing Detector (Static Demo)</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/minified/html5-qrcode.min.js"></script>
+  <style>
+:root{   --bg:#0b1020;--card:#0f1724;--muted:#98a0b3;--accent:#7c5cff;--accent-2:#00e5a8;--danger:#ff6b6b; }
+*{box-sizing:border-box;margin:0;padding:0}
+body{   font-family:Inter,system-ui,-apple-system,'Segoe UI',Roboto,Arial;   background: radial-gradient(1200px 600px at 10% 10%, rgba(124,92,255,0.08), transparent),               radial-gradient(1000px 500px at 90% 90%, rgba(0,229,168,0.04), transparent),               var(--bg);   color:#e6eef8;padding:28px; }
+.container{max-width:1100px;margin:0 auto;border-radius:16px;overflow:hidden;background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));box-shadow:0 8px 40px rgba(2,6,23,0.7);border:1px solid rgba(255,255,255,0.03);} 
+.header{display:flex;gap:18px;align-items:center;padding:28px;background:linear-gradient(90deg, rgba(124,92,255,0.06), rgba(0,229,168,0.03));border-bottom:1px solid rgba(255,255,255,0.02)} 
+.logo{width:64px;height:64px;border-radius:12px;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,var(--accent),#4f46e5);font-weight:800;font-size:22px;color:white;box-shadow:0 6px 20px rgba(124,92,255,0.12)} 
+.header h1{font-size:1.6rem;margin:0} 
+.header p{color:var(--muted);margin-top:4px;font-size:0.95rem} 
+.main{display:grid;grid-template-columns:1fr 420px;gap:24px;padding:28px} 
+.left{padding:10px} 
+.right{padding:10px} 
+.input-row{display:flex;gap:12px;margin-bottom:16px} 
+.url-input{flex:1;padding:14px;border-radius:10px;border:1px solid rgba(255,255,255,0.04);background:var(--card);color:var(--muted);font-size:0.98rem} 
+.url-input:focus{outline:none;border-color:rgba(124,92,255,0.18);box-shadow:0 8px 30px rgba(124,92,255,0.06);color:#e6eef8} 
+.analyze-btn{padding:12px 18px;border-radius:10px;border:none;background:linear-gradient(90deg,var(--accent),#3b82f6);color:white;font-weight:600;cursor:pointer} 
+.small{font-size:0.9rem;color:var(--muted)} 
+.panel{background:linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.00));padding:14px;border-radius:10px;border:1px solid rgba(255,255,255,0.02)} 
+.examples{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px} 
+.example-url{padding:8px 12px;border-radius:999px;background:transparent;border:1px dashed rgba(255,255,255,0.03);cursor:pointer;font-size:0.9rem;color:var(--muted)} 
+.loading{display:none;padding:14px;text-align:center;color:var(--muted)} 
+.spinner{display:inline-block;width:28px;height:28px;border:3px solid rgba(255,255,255,0.06);border-top:3px solid var(--accent);border-radius:50%;animation:spin 1s linear infinite;margin-right:10px} 
+@keyframes spin{to{transform:rotate(360deg)}} 
+.result-card{margin-top:12px;border-radius:12px;overflow:hidden;border:1px solid rgba(255,255,255,0.03)} 
+.result-header{padding:16px;font-weight:700} 
+.result-header.phishing{background:linear-gradient(90deg, rgba(255,107,107,0.12), rgba(255,107,107,0.04));color:var(--danger)} 
+.result-header.legitimate{background:linear-gradient(90deg, rgba(0,229,168,0.06), rgba(0,229,168,0.02));color:var(--accent-2)} 
+.result-header.suspicious{background:linear-gradient(90deg, rgba(255,212,59,0.06), rgba(255,212,59,0.02));color:#ffd43b} 
+.result-body{padding:16px;background:linear-gradient(180deg, rgba(255,255,255,0.01), transparent)} 
+.info-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:12px} 
+.info-item{padding:12px;border-radius:8px;background:rgba(255,255,255,0.01);border:1px solid rgba(255,255,255,0.02)} 
+.info-label{font-weight:600;color:var(--muted);font-size:0.85rem} 
+.info-value{word-break:break-all;color:#dbeafe;margin-top:6px;font-size:0.95rem} 
+.confidence-bar{background:rgba(255,255,255,0.03);height:14px;border-radius:10px;overflow:hidden} 
+.confidence-fill{height:100%;background-image:linear-gradient(90deg,var(--danger),#ffd43b,var(--accent-2));width:0%;transition:width 0.6s ease} 
+.text-content{background:rgba(255,255,255,0.01);padding:12px;border-radius:8px;border:1px solid rgba(255,255,255,0.02);max-height:200px;overflow:auto;font-family:monospace;color:#cfe8df} 
+.error{background:rgba(255,0,0,0.04);color:#ffb4b4;padding:12px;border-radius:8px;border-left:4px solid rgba(255,107,107,0.5)} 
+.sub-section{margin-top:12px} 
+.qr-container{display:flex;flex-direction:column;gap:8px} 
+#qr-reader{width:100%} 
+.textarea{width:100%;min-height:120px;padding:10px;border-radius:8px;background:var(--card);border:1px solid rgba(255,255,255,0.03);color:#dbeafe} 
+.small-btn{padding:8px 10px;border-radius:8px;border:none;background:rgba(255,255,255,0.03);color:var(--muted);cursor:pointer} 
+.report-form{display:flex;gap:8px;align-items:center} 
+.report-input{flex:1;padding:10px;border-radius:8px;background:var(--card);border:1px solid rgba(255,255,255,0.03);color:#dbeafe} 
+.reports-list{max-height:260px;overflow:auto;margin-top:8px} 
+.report-item{padding:8px;border-radius:8px;background:rgba(255,255,255,0.01);border:1px solid rgba(255,255,255,0.02);margin-bottom:6px} 
+.preview-img{margin-top:12px;max-width:100%;border-radius:8px;border:1px solid rgba(255,255,255,0.02);display:block} 
+footer{padding:14px 28px;color:var(--muted);font-size:0.9rem;border-top:1px solid rgba(255,255,255,0.02)} 
+@media(max-width:980px){.main{grid-template-columns:1fr}.right{order:-1}} 
+  </style>
+</head>
+<body>
+  <div class="container">
+
+    <div class="header">
+      <div class="logo">LD</div>
+      <div>
+        <h1>Link Detox</h1>
+        <p>Static demo — Runs entirely in your browser for GitHub Pages.</p>
+      </div>
+    </div>
+
+    <div class="main">
+      <div class="left">
+        <div class="panel">
+          <div class="input-row">
+            <input id="urlInput" class="url-input" placeholder="Enter website URL (e.g. https://example.com)">
+            <button id="analyzeBtn" class="analyze-btn" onclick="analyzeUrl()">🔍 Scan</button>
+          </div>
+          <div class="small">Tip: paste domain (example.com) or full URLs. https is auto-added if missing.</div>
+
+          <div style="margin-top:14px" class="examples">
+            <div class="example-url" onclick="setUrl('https://google.com')">google.com</div>
+            <div class="example-url" onclick="setUrl('https://github.com')">github.com</div>
+            <div class="example-url" onclick="setUrl('https://stackoverflow.com')">stackoverflow.com</div>
+            <div class="example-url" onclick="setUrl('http://phishing.example')">phishing.example</div>
+          </div>
+
+          <!-- QR Scanner -->
+          <div class="sub-section">
+            <h4 style="margin-bottom:8px">📷 QR Code Scanner (mobile)</h4>
+            <div class="qr-container panel">
+              <div id="qr-reader"></div>
+              <div style="display:flex;gap:8px;align-items:center;justify-content:space-between;margin-top:6px">
+                <div class="small">Point camera to QR. Scanned URL will be auto-analyzed.</div>
+                <div>
+                  <button id="start-qr" class="small-btn">Start</button>
+                  <button id="stop-qr" class="small-btn">Stop</button>
+                </div>
+              </div>
+              <div id="qr-result" class="small" style="margin-top:8px;color:var(--muted)"></div>
+            </div>
+          </div>
+
+          <!-- Email/Chat Analyzer -->
+          <div class="sub-section">
+            <h4 style="margin-bottom:8px">📧 Email / Chat Analyzer</h4>
+            <div class="panel">
+              <div class="small" style="margin-bottom:8px">Paste message body. Links will be extracted and analyzed (client-side).</div>
+              <textarea id="messageInput" class="textarea" placeholder="Paste email or chat text here..."></textarea>
+              <div style="display:flex;gap:8px;margin-top:8px;justify-content:flex-end">
+                <button class="small-btn" onclick="analyzeMessage()">Analyze Message</button>
+              </div>
+              <div id="message-report" style="margin-top:10px"></div>
+            </div>
+          </div>
+
+          <!-- Community Reporting -->
+          <div class="sub-section">
+            <h4 style="margin-bottom:8px">🧑‍🤝‍🧑 Community Reporting (local)</h4>
+            <div class="panel">
+              <div class="small" style="margin-bottom:8px">Report suspicious URLs — stored locally in your browser (localStorage) for this demo.</div>
+              <div class="report-form">
+                <input id="reportInput" class="report-input" placeholder="Enter suspicious URL or domain">
+                <button class="small-btn" onclick="submitReport()">Report</button>
+              </div>
+              <div style="margin-top:10px;font-weight:600">Recently reported (local)</div>
+              <div id="reportsList" class="reports-list"></div>
+            </div>
+          </div>
+
+        </div>
+        <div id="loading" class="loading" style="margin-top:12px"><span class="spinner"></span><span>Analyzing... this may take a few moments.</span></div>
+       <div id="results" style="display:none"></div>
+      </div>
+
+      <div class="right">
+        <div class="panel">
+          <h3 style="margin-bottom:8px">How Link Detox works</h3>
+          <div class="small">This static demo performs client-side heuristics to approximate phishing risk. It does not scrape remote pages (CORS), nor call any server or AI model. For a full server-backed demo you'd deploy the original Flask app.</div>
+          <hr style="margin:12px 0;border:none;border-top:1px solid rgba(255,255,255,0.02)" />
+          <h4 style="margin-bottom:6px">Quick checks performed (heuristic demo)</h4>
+          <ul class="small" style="margin-left:16px;line-height:1.7;color:var(--muted)">
+            <li>HTTPS presence</li>
+            <li>Domain length and number of subdomains</li>
+            <li>Presence of suspicious keywords ("login", "secure", "verify", "update")</li>
+            <li>Too many hyphens or dots</li>
+            <li>Lookalike TLDs and long hostnames</li>
+          </ul>
+        </div>
+
+        <div class="panel" style="margin-top:12px">
+          <h4 style="margin-bottom:8px">Notes & safety</h4>
+          <div class="small">This is only a local demo. Do not enter passwords or other sensitive data. Use the original Flask app for more accurate server-side analysis.</div>
+        </div>
+
+        <div class="panel" style="margin-top:12px">
+          <h4 style="margin-bottom:8px">🔒 Sandbox Preview</h4>
+          <div class="small">Safe screenshot preview (read-only) using a public screenshot service. Works in the browser for static hosting.</div>
+          <div id="previewSection" style="margin-top:12px"></div>
+          <div id="sandboxPreview" style="margin-top:12px"></div>
+        </div>
+      </div>
+    </div>
+
+    <footer>Link Detox — Static GitHub Pages demo • Client-side heuristics only</footer>
+  </div>
+
+  <script>
+  // Utility
+  function setUrl(u){document.getElementById('urlInput').value = u}
+
+  // --- Local, client-side "analysis" (heuristic mock) ---
+  function normalizeUrl(u){
+    if(!u) return u;
+    u = u.trim();
+    if(!u.startsWith('http://') && !u.startsWith('https://')) u = 'https://' + u;
+    try{ const p = new URL(u); return p.href; }catch(e){ return u; }
+  }
+
+  function extractDomain(u){ try{ return (new URL(u)).hostname }catch(e){ return u.replace(/^https?:\/\//,'').split('/')[0]; } }
+
+  function heuristicAnalysis(url){
+    // Lightweight, deterministic heuristic to produce a believable demo result.
+    const normalized = normalizeUrl(url);
+    const domain = extractDomain(normalized).toLowerCase();
+
+    const flags = [];
+    let score = 70; // base
+
+    if(!normalized.startsWith('https://')){ flags.push('No HTTPS'); score -= 25; }
+    const parts = domain.split('.');
+    if(parts.length >= 4){ flags.push('Many subdomains'); score -= 10; }
+    if(domain.length > 30){ flags.push('Long domain'); score -= 10; }
+    if(domain.includes('-')){ flags.push('Hyphens in domain (could be suspicious)'); score -= 5; }
+    const suspiciousKeywords = ['login','secure','account','update','verify','bank','confirm','payment','signin'];
+    for(const k of suspiciousKeywords){ if(domain.includes(k)){ flags.push(`Contains keyword: ${k}`); score -= 18; } }
+    // lookalike tld heuristic (very simple)
+    const tld = parts[parts.length-1];
+    if(['xyz','top','site','online','club','info'].includes(tld)){ flags.push('Unusual TLD'); score -= 8; }
+
+    // clamp score
+    if(score < 0) score = 0; if(score > 98) score = 98;
+
+    let verdict = 'SUSPICIOUS';
+    if(score >= 75) verdict = 'LEGITIMATE';
+    if(score <= 35) verdict = 'PHISHING';
+
+    // Build scraped_data mock
+    const scraped = {
+      success: true,
+      url: normalized,
+      domain: domain,
+      title: domain.split('.').slice(0, -1).join('.') || domain,
+      description: '',
+      text_content: `This is a client-side preview for ${domain}. (Static demo — no remote scraping)`,
+      links_count: Math.max(0, Math.min(40, Math.floor(domain.length / 4))),
+      forms_count: domain.includes('login') ? 1 : 0,
+      forms: [],
+      status_code: 200
+    };
+
+    const analysis = {
+      success: true,
+      verdict: verdict,
+      confidence: Math.max(20, Math.min(95, Math.round(score))),
+      reasoning: `Heuristic analysis based on URL characteristics. Flags found: ${flags.length ? flags.join('; ') : 'None'}.`,
+      flags: flags.join('\n'),
+      recommendation: verdict === 'PHISHING' ? 'Do not visit or enter credentials. Report and block.' : (verdict === 'SUSPICIOUS' ? 'Proceed with caution; verify link with source.' : 'Looks OK, but always be cautious.'),
+      full_response: ''
+    };
+
+    return {scraped, analysis};
+  }
+
+  // Simulate network latency for UX
+  function localAnalyze(url){
+    return new Promise((resolve) => {
+      setTimeout(()=>{ resolve(heuristicAnalysis(url)); }, 700 + Math.random()*800);
+    });
+  }
+
+  // Analyze single URL (client-side)
+  async function analyzeUrl(){
+    const urlInput = document.getElementById('urlInput');
+    const analyzeBtn = document.getElementById('analyzeBtn');
+    const loading = document.getElementById('loading');
+    const results = document.getElementById('results');
+    const rawUrl = urlInput.value.trim();
+    if(!rawUrl){ alert('Please enter a URL to analyze'); return; }
+
+    analyzeBtn.disabled = true;
+    loading.style.display = 'block';
+    results.style.display = 'none';
+    results.innerHTML = '';
+
+    try{
+      const {scraped, analysis} = await localAnalyze(rawUrl);
+      // display results
+      displayResults({scraped_data: scraped, analysis: analysis});
+      // show preview image using thum.io (no server required)
+      const preview_url = `https://image.thum.io/get/width/900/crop/800/noanimate/${scraped.url}`;
+      document.getElementById('previewSection').innerHTML = `<img class="preview-img" src="${preview_url}" alt="preview">`;
+      document.getElementById('sandboxPreview').innerHTML = `<iframe src="${preview_url}" style="width:100%;height:300px;border:1px solid rgba(255,255,255,0.02);border-radius:8px;" sandbox></iframe>`;
+    }catch(e){ displayError('Analysis failed: ' + e.message); }
+    finally{ loading.style.display = 'none'; analyzeBtn.disabled = false; }
+  }
+
+  function displayResults(data){
+    const scraped = data.scraped_data;
+    const analysis = data.analysis;
+    const results = document.getElementById('results');
+
+    let verdictClass = 'suspicious';
+    let verdictIcon = '⚠️';
+    if (analysis.verdict === 'PHISHING') { verdictClass = 'phishing'; verdictIcon = '🚨'; }
+    else if (analysis.verdict === 'LEGITIMATE') { verdictClass = 'legitimate'; verdictIcon = '✅'; }
+
+    const confidence = (analysis.confidence || 50);
+    results.innerHTML = `
+      <div class="result-card">
+        <div class="result-header ${verdictClass}">${verdictIcon} ${escapeHtml(analysis.verdict)} — Confidence: ${confidence}%</div>
+        <div class="result-body">
+          <div class="confidence-bar"><div class="confidence-fill" style="width:${confidence}%"></div></div>
+
+          <div class="info-grid" style="margin-top:12px">
+            <div class="info-item"><div class="info-label">Website URL</div><div class="info-value">${escapeHtml(scraped.url)}</div></div>
+            <div class="info-item"><div class="info-label">Domain</div><div class="info-value">${escapeHtml(scraped.domain)}</div></div>
+            <div class="info-item"><div class="info-label">Page Title</div><div class="info-value">${escapeHtml(scraped.title)}</div></div>
+            <div class="info-item"><div class="info-label">Status Code</div><div class="info-value">${scraped.status_code}</div></div>
+            <div class="info-item"><div class="info-label">Links Found</div><div class="info-value">${scraped.links_count}</div></div>
+            <div class="info-item"><div class="info-label">Forms Found</div><div class="info-value">${scraped.forms_count}</div></div>
+          </div>
+
+            
+          <div style="margin-top:12px">
+            <div class="section-title" style="font-weight:700;margin-bottom:8px">Heuristic Analysis</div>
+            <div class="text-content">${escapeHtml(analysis.reasoning || analysis.full_response || '')}</div>
+          </div>
+
+          ${analysis.flags? `<div style="margin-top:12px"><div class="section-title" style="font-weight:700;margin-bottom:8px">Security Flags</div><div class="text-content">${escapeHtml(analysis.flags)}</div></div>` : ''}
+
+          ${analysis.recommendation? `<div style="margin-top:12px"><div class="section-title" style="font-weight:700;margin-bottom:8px">Recommendation</div><div class="text-content">${escapeHtml(analysis.recommendation)}</div></div>` : ''}
+
+          ${scraped.description? `<div style="margin-top:12px"><div class="section-title" style="font-weight:700;margin-bottom:8px">Page Description</div><div class="text-content">${escapeHtml(scraped.description)}</div></div>` : ''}
+
+          <div style="margin-top:12px"><div class="section-title" style="font-weight:700;margin-bottom:8px">Page Content Preview</div><div class="text-content">${escapeHtml(scraped.text_content)}</div></div>
+        </div>
+      </div>
+    `;
+    results.style.display = 'block';
+  }
+
+  function displayError(msg){
+    const results = document.getElementById('results');
+    results.innerHTML = `<div class="error"><strong>❌ Analysis Failed</strong><div style="margin-top:6px">${escapeHtml(msg)}</div></div>`;
+    results.style.display = 'block';
+  }
+
+  // Email/Chat analyzer: extract links and analyze each using localAnalyze
+  async function analyzeMessage(){
+    const text = document.getElementById('messageInput').value || '';
+    if(!text.trim()){ alert('Please paste the message text to analyze.'); return; }
+    const links = extractLinks(text);
+    const out = document.getElementById('message-report');
+    out.innerHTML = '';
+    if(links.length === 0){ out.innerHTML = '<div class="small">No links found in the text.</div>'; return; }
+
+    out.innerHTML = `<div class="small">Found ${links.length} link(s). Analyzing...</div>`;
+    const results = [];
+    for(const l of links){
+      try{
+        const res = await localAnalyze(l);
+        results.push({url:l, result:{success:true, analysis:res.analysis}});
+      }catch(e){ results.push({url:l, result:{success:false, error:e.message}}); }
+    }
+
+    let html = '<div class="small">Consolidated report:</div>';
+    for(const r of results){
+      if(r.result && r.result.success){
+        const a = r.result.analysis;
+        html += `<div class="result-card" style="margin-top:8px"><div class="result-header ${a.verdict==='PHISHING'?'phishing':a.verdict==='LEGITIMATE'?'legitimate':'suspicious'}">${escapeHtml(a.verdict)} — ${a.confidence}% — ${escapeHtml(r.url)}</div><div class="result-body"><div class="small">${escapeHtml(a.reasoning||a.full_response||'No details')}</div></div></div>`;
+      } else {
+        html += `<div class="result-card" style="margin-top:8px"><div class="result-header suspicious">ERROR — ${escapeHtml(r.url)}</div><div class="result-body"><div class="small">${escapeHtml(r.result && r.result.error ? r.result.error : 'Failed to analyze')}</div></div></div>`;
+      }
+    }
+    out.innerHTML = html;
+  }
+
+  function extractLinks(text){
+    const urlRegex = /(https?:\/\/[^\s"'<>]+)|(?:www\.[^\s"'<>]+\.[^\s"'<>]+)/gi;
+    const matches = text.match(urlRegex) || [];
+    return matches.map(m => { if(!m.startsWith('http')) return (m.startsWith('www.') ? 'https://'+m : 'https://'+m); return m; });
+  }
+
+  // Community reporting stored in localStorage for static demo
+  const REPORT_KEY = 'ld_reports_v1';
+  function submitReport(){
+    const inp = document.getElementById('reportInput');
+    const url = inp.value.trim();
+    if(!url){ alert('Enter a URL or domain to report'); return; }
+    const normalized = normalizeUrl(url);
+    const domain = extractDomain(normalized).toLowerCase();
+    const entry = {domain: domain, timestamp: new Date().toISOString().replace('T',' ').split('.')[0]};
+    const cur = JSON.parse(localStorage.getItem(REPORT_KEY) || '[]');
+    cur.unshift(entry);
+    localStorage.setItem(REPORT_KEY, JSON.stringify(cur.slice(0,200)));
+    inp.value='';
+    loadReports();
+    alert('Reported (local): ' + domain);
+  }
+
+  function loadReports(){
+    const el = document.getElementById('reportsList'); el.innerHTML = '';
+    const cur = JSON.parse(localStorage.getItem(REPORT_KEY) || '[]');
+    if(cur && cur.length){
+      cur.slice(0,50).forEach(rep => { el.innerHTML += `<div class="report-item">${escapeHtml(rep.domain)} <div class="small" style="color:var(--muted);margin-top:6px">${escapeHtml(rep.timestamp)}</div></div>`; });
+    } else { el.innerHTML = '<div class="small">No reports yet (local).</div>'; }
+  }
+
+  // QR code scanning using html5-qrcode
+  let html5QrcodeScanner = null;
+  let qrRunning = false;
+  function startQr(){
+    if(qrRunning) return;
+    const qrRegionId = 'qr-reader';
+    const config = { fps: 10, qrbox: {width: 250, height: 250}, rememberLastUsedCamera: true };
+    html5QrcodeScanner = new Html5Qrcode(qrRegionId);
+    Html5Qrcode.getCameras().then(cameras => {
+      const cameraId = cameras && cameras.length ? cameras[0].id : null;
+      html5QrcodeScanner.start(
+        cameraId,
+        config,
+        qrMessage => {
+          document.getElementById('qr-result').textContent = 'Scanned: ' + qrMessage;
+          stopQr();
+          document.getElementById('urlInput').value = qrMessage;
+          analyzeUrl();
+        },
+        errorMessage => { /* ignore intermittent errors */ }
+      ).then(()=>{ qrRunning = true }).catch(e => { console.error(e); alert('Unable to start camera. Try in mobile browser or grant camera permission.') });
+    }).catch(err => { console.error(err); alert('No camera found or permission denied.'); });
+  }
+
+  function stopQr(){
+    if(!qrRunning || !html5QrcodeScanner) return;
+    html5QrcodeScanner.stop().then(()=>{ html5QrcodeScanner.clear(); qrRunning=false; }).catch(e=>{ console.warn('Failed to stop QR', e) });
+  }
+
+  document.getElementById('start-qr')?.addEventListener('click', startQr);
+  document.getElementById('stop-qr')?.addEventListener('click', stopQr);
+
+  // Minimal HTML-escape to avoid breaking layout / injection
+  function escapeHtml(str){
+    if(!str) return '';
+    return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+  }
+
+  // Enter key triggers
+  document.getElementById('urlInput')?.addEventListener('keypress', function(e){ if(e.key==='Enter') analyzeUrl() });
+
+  // Load local reports on start
+  loadReports();
+  </script>
+</body>
+</html>
